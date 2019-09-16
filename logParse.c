@@ -9,11 +9,32 @@
 //used for signaling actions on a process 
 #include <signal.h>
 
+FILE *fp;
 // global variable to hold child process id
 pid_t child_pid = -1;
 
-// function to kill the child process on alarm;
+int status=0;
+pid_t wpid;
 
+// function for subset sum
+int isSubsetSum(int set[], int n, int sum){
+	if(sum ==0){
+		return 1;
+	}
+	if(n == 0 && sum!= 0){
+		return 0;
+	}
+	if(set[n-1] > sum){
+		return isSubsetSum(set,n-1,sum);
+	}
+	
+	if(isSubsetSum(set, n-1,sum)){
+		return 1;
+	}else{
+		return isSubsetSum(set, n-1, sum-set[n-1]); 
+	};
+
+}
 int main(int argc, char* argv[]){
 	// integer to check for command line options and maximum running time
 	int opt;
@@ -78,7 +99,6 @@ int main(int argc, char* argv[]){
 	}
 	
 	// file pointer to open the target inputfile, then read the first number from that file;
-	FILE *fp;
 	fp = fopen (inputFile,"r");
 	if(fp == NULL){
 		perror(errorMsg);
@@ -94,25 +114,34 @@ int main(int argc, char* argv[]){
 
 	// loop through the number of child given by the input file
 	while(numOfChild >0){
-		
+		//wait for the child to finish process
+		while ((wpid = wait(&status)) > 0);	
 		//fork a child process then store the child process id into the child process id array;
 		child_pid = fork();
 		childArray[numOfChild-1] = child_pid;
 
 		// parent task; 
 		if(child_pid >0){
+			char temp1[100];
 			printf("main process id: %d\n",getpid());
 			printf("child process id: %d\n",child_pid);
 			numOfChild -=1;
-		
+			fscanf(fp,"%[^\n]\n", temp1);	
+			printf("Data from the file:%s\n", temp1);
 		// child task;
 		}else{
-
+			int sum;
+			fscanf(fp,"%d",&sum);
+			printf("sum: %d\n",sum);
+			// initialize an array that could store up to 10 integers
+			int *temp;
+			temp = malloc(sizeof(int)*10);
 			// terminating the child process after process is finished
-			kill(getpid(),SIGKILL);
+			kill(getpid(),SIGTERM);
 		}
 	}
-
+	// wait for the chile to finish process;
+	while ((wpid = wait(&status)) > 0);
 	// printing all the child process id;	
 	printf("\nAll the child process id: \n");
 	while(childCounter > 0){
