@@ -102,12 +102,13 @@ int main(int argc, char* argv[]){
 		//wait for the child to finish process
 		//fork a child process then store the child process id into the child process id array;
 		child_pid = fork();
-		while ((wpid = wait(&status)) > 0);
 		childArray[numOfChild-1] = child_pid;
-		
-
+			
 		// parent task;
-		if(child_pid>0){	
+		if(child_pid>0){
+			while ((wpid = wait(&status)) > 0);
+			int temp;
+                        fscanf(fp,"%d",&temp);		
 			char temp1;
 			printf("main process id: %d\n",getpid());
 			printf("child process id: %d\n",child_pid);
@@ -129,13 +130,24 @@ int main(int argc, char* argv[]){
 			int i =0;
 			temp = malloc(sizeof(int)*size);
 			
-			fscanf(fp,"%d[^\n]",&sum);
-			while(!feof(fp)){
+			fscanf(fp,"%d",&sum);
+			
+			char temp1;
+			temp1 = fgetc(fp);
+			while(temp1 != '\n'){
 				temp[i] = sum;
-				printf("%d\n",temp[i]);
+			//	printf("%d\n",temp[i]);
 				i+=1;
-				fscanf(fp,"%d[^\n]",&sum);
+				fscanf(fp,"%d",&sum);
+				temp1 = fgetc(fp);
 			}
+			
+			int a = 0;
+			while (a < i){
+				printf("%d ",temp[a]);
+				a+=1;
+			}
+			printf("\n");
 			// terminating the child process after process is finished
 			kill(getpid(),SIGTERM);
 		}
