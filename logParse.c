@@ -10,6 +10,8 @@
 #include <signal.h>
 //used for boolean values
 #include <stdbool.h>
+//used for timer functions
+#include <time.h>
 
 // global file pointer
 FILE *fp;
@@ -25,7 +27,41 @@ pid_t wpid;
 int *sub;
 int setCounter =0;
 
-bool *subset(int set[],int n, int sum){
+// initialize the max duration to be 10 seconds
+int t = 10;
+
+ // setting up default input and output file
+char *inputFile = "input.dat";
+char *outputFile = "output.dat";
+
+
+// alarm handler that outputs to the proper output file with proper message
+// close all the files and end the master process
+void alarmHandler(int sig){
+	fclose(fp);
+        wfp = fopen(outputFile,"a");
+        perror("Program terminated because it exceeded the maximum running time it is allowed\n");
+	fprintf(wfp,"%d : master process terminated after %d seconds\n",getpid(),t);
+	fclose(wfp);
+	if(child_pid!=-1){
+		kill(child_pid,SIGTERM);
+	}
+        kill(getpid(),SIGTERM);
+}
+
+// function that finds the subset then output the subset to the output file
+// takes in the original time of when the process is created
+// recursively looks for the difference to make sure it does not go over 1 second
+bool *subset(int set[],int n, int sum,time_t checkTime){
+	time_t newTime;
+	time(&newTime);
+	if(newTime-checkTime >=1){
+		wfp = fopen(outputFile,"a");
+        	printf("Child Program terminated because 1 second has passed\n\n");
+        	fprintf(wfp,"%d : child process terminated after 1 seconds\n",getpid());
+        	fclose(wfp);
+		kill(getpid(),SIGTERM);	
+	}
 	if(sum == 0){
 		return true;
 	}
@@ -33,16 +69,14 @@ bool *subset(int set[],int n, int sum){
 		return false;
 	}
 	if(set[n-1]>sum){
-		return subset(set,n-1,sum);
-	}
-	
-		
-	if(subset(set,n-1,sum-set[n-1])){
+		return subset(set,n-1,sum,checkTime);
+	}	
+	if(subset(set,n-1,sum-set[n-1],checkTime)){
 			sub[setCounter] = set[n-1];
                         setCounter +=1;
 			return true;
 	}
-	if(subset(set,n-1,sum)){
+	if(subset(set,n-1,sum,checkTime)){
 	  	sub[setCounter] = set[n-1];
                         return true;
 	}
@@ -52,9 +86,10 @@ bool *subset(int set[],int n, int sum){
 
 // main function
 int main(int argc, char* argv[]){
+	signal(SIGALRM,alarmHandler);
+
 	// integer to check for command line options and maximum running time
 	int opt;
-	int t = 10;
 	int alarmSet = 0;
 	sub = malloc(sizeof(int)*15);	
 	// integer variable to hold the number of child/subtasks read from the input file.
@@ -68,11 +103,8 @@ int main(int argc, char* argv[]){
         strcpy(errorMsg,argv[0]);
         strcat(errorMsg,": Error:");
 	
-	// setting up default input and output file
-	char *inputFile = "input.dat";
-	char *outputFile = "output.dat";
 
-	printf("=============================================================\n");
+	printf("\n=============================================================\n");
 	// loop through the command line option
 	while((opt = getopt(argc,argv,"hi:o:t:"))!=-1){
 	        switch(opt){	
@@ -102,8 +134,6 @@ int main(int argc, char* argv[]){
 			case 't':
 				tflag = 1;
 				t = atoi (optarg);
-				alarm(t);
-				alarmSet = 1;
 				printf("Max time duration: %d seconds\n", t);
 				break;
 			
@@ -113,13 +143,21 @@ int main(int argc, char* argv[]){
 				break;
 		}
 	}
-	if(alarmSet == 0){
-		alarm(t);
+
+	// formatting the output to the screen
+	if(tflag==0){
+	printf("Max time duration: %d seconds\n", t);
+	}
+	if(iflag!=1&&oflag!=1&&tflag!=1){
+	printf("=============================================================\n\n");
 	}
 	if(iflag==1||oflag==1||tflag==1){
 	printf("=============================================================\n\n");
 	}
-	
+
+	// set the alarm for the main process
+	alarm(t);	
+
 	// file pointer to open the target inputfile, then read the first number from that file;
 	fp = fopen (inputFile,"r");
 	if(fp == NULL){
@@ -127,15 +165,17 @@ int main(int argc, char* argv[]){
 		return 0;
 	}
 	fscanf(fp,"%d",&numOfChild);
-	printf("number of Child: %d\n",numOfChild);
+	printf("total number of Child: %d\n\n",numOfChild);
 	
 	// child counter for printing all child process
 	int childCounter = numOfChild;
 	// child array to hold all the child process id
 	int childArray[numOfChild];	
 
+
 	// loop through the number of child given by the input file
 	while(numOfChild>0){
+		int parentPID = getpid();
 		//wait for the child to finish process
 		//fork a child process then store the child process id into the child process id array;
 		child_pid = fork();
@@ -143,21 +183,31 @@ int main(int argc, char* argv[]){
 			
 		// parent task;
 		if(child_pid>0){
+			// wait for the child
 			while ((wpid = wait(&status)) > 0);
 			int temp;
                         fscanf(fp,"%d",&temp);		
 			char temp1;
-			printf("main process id: %d\n",getpid());
-			printf("child process id: %d\n",child_pid);
-			numOfChild -=1;
-			temp1 = fgetc(fp);
 			
+			// reduce child counter to determine the continuation of the while loop
+			numOfChild -=1;
+
+			temp1 = fgetc(fp);			
 			// have the file pointer point to the next line
 			while(temp1!='\n'&& temp1!=EOF){
 				temp1=fgetc(fp);
 			}
 		// child task;
 		}else{
+		
+			// uncomment to print child process id
+			//printf("child process id: %d\n",getpid());
+		
+			// set up the starting time of the child process	
+			time_t oriTime;
+			time(&oriTime);
+			
+			// scanning the first number and set it to be the sum for the subsets
 			int sum;
 			fscanf(fp,"%d",&sum);
 			printf("sum: %d\n",sum);
@@ -167,23 +217,33 @@ int main(int argc, char* argv[]){
 			int i =0;
 			temp = malloc(sizeof(int)*size);			
 			
+			// checking to see if next character is the next line
 			int num;
 			char temp1;
 			temp1 = fgetc(fp);
+			
+			// keep scanning and add numbers to integer array until everything is done
 			while(temp1 != '\n'){
 				fscanf(fp,"%d",&num);
 				temp[i]=num;
 				i+=1;
 				temp1 = fgetc(fp);
 			}
-			
+		
+			// uncomment to see all the numbers of the main set on console	
 			int a = 0;
+			if(a<i){
+				printf("The main set: ");
+			}
 			while (a < i){
 				printf("%d ",temp[a]);
 				a+=1;
 			}
+			printf("\n");
+
+			// open a writing file, if the subset is found, output to output file
 			wfp = fopen(outputFile,"a");
-			if(subset(temp,i,sum)){
+			if(subset(temp,i,sum,oriTime)){
 				wfp = fopen(outputFile,"a");
 		
 				int b =0, c=0;
@@ -194,12 +254,13 @@ int main(int argc, char* argv[]){
 					}
 					fprintf(wfp,"%d ",sub[b]);
 					b+=1;
-					c += 1;
-				
+					c += 1;			
 				}
 				fprintf(wfp,"= %d\n",sum);
 				fclose(wfp);
 				fprintf(wfp,"\n");
+
+			// else output to the output file with a failed message
 			}else{
 				fprintf(wfp,"%d : No subset of numbers summed to %d\n",getpid(),sum);
 				fclose(wfp);
@@ -211,15 +272,23 @@ int main(int argc, char* argv[]){
 	}
 	// wait for the chile to finish process;
 	while ((wpid = wait(&status)) > 0);
-	// printing all the child process id;	
+
+	// format the display then
+	// print all the process id to the screen and to the file	
 	printf("\nAll the child process id: \n");
+        wfp = fopen(outputFile,"a");
+	fprintf(wfp,"\nMain process id: %d\n\n",getpid());
+	fprintf(wfp,"All the child process id: ");
 	while(childCounter > 0){
 		printf("%d\n",childArray[childCounter-1]);
+		fprintf(wfp,"%d, ",childArray[childCounter-1]);
 		childCounter-=1;
 	}
-
-	// close the input file
+	printf("\n");
+        fprintf(wfp,"\n\n");
+	
+	//close all files;
+	fclose(wfp);
 	fclose(fp);
-		
 	return 0;
 }
