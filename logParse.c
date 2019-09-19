@@ -40,8 +40,8 @@ char *outputFile = "output.dat";
 void alarmHandler(int sig){
 	fclose(fp);
         wfp = fopen(outputFile,"a");
-        perror("Program terminated because it exceeded the maximum running time it is allowed\n");
-	fprintf(wfp,"%d : master process terminated after %d seconds\n",getpid(),t);
+        printf("Main program terminated because maximum allowed time has passed\n");
+	fprintf(wfp,"%d : Master process terminated after %d seconds\n\n",getpid(),t);
 	fclose(wfp);
 	if(child_pid!=-1){
 		kill(child_pid,SIGTERM);
@@ -52,13 +52,13 @@ void alarmHandler(int sig){
 // function that finds the subset then output the subset to the output file
 // takes in the original time of when the process is created
 // recursively looks for the difference to make sure it does not go over 1 second
-bool *subset(int set[],int n, int sum,time_t checkTime){
+bool subset(int set[],int n, int sum,time_t checkTime){
 	time_t newTime;
 	time(&newTime);
 	if(newTime-checkTime >=1){
 		wfp = fopen(outputFile,"a");
         	printf("Child Program terminated because 1 second has passed\n\n");
-        	fprintf(wfp,"%d : child process terminated after 1 seconds\n",getpid());
+        	fprintf(wfp,"%d : Child process terminated without a result after 1 seconds\n",getpid());
         	fclose(wfp);
 		kill(getpid(),SIGTERM);	
 	}
@@ -246,7 +246,7 @@ int main(int argc, char* argv[]){
 				a+=1;
 			}
 			printf("\n");
-
+			sleep(1);
 			// open a writing file, if the subset is found, output to output file
 			wfp = fopen(outputFile,"a");
 			if(subset(temp,i,sum,oriTime)){
@@ -287,7 +287,7 @@ int main(int argc, char* argv[]){
 	fprintf(wfp,"All the child process id: ");
 	while(childCounter > 0){
 		printf("%d\n",childArray[childCounter-1]);
-		fprintf(wfp,"%d, ",childArray[childCounter-1]);
+		fprintf(wfp,"%d  ",childArray[childCounter-1]);
 		childCounter-=1;
 	}
 	printf("\n");
