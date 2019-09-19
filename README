@@ -1,0 +1,23 @@
+Yanchen Guo
+CS 4760
+Project 2
+
+For this project, compile it by first enter the command "make"
+It then creates an executable called "logParse".
+Running the project by calling "./logParse".
+It could also be ran with these command line arguments "-h -i -o -t".
+
+-h: displays all the avaliable command line arguments for this project.
+-i: give a file name after -i to change its default input file from input.dat to the given file name.
+-o: give a file name after -o to change its default output file from output.dat to the given file name.
+-t: give a integer after -to change the dafault running time of the main program from 10s to given integer seconds.
+
+
+Some problems I ran into while programming that took a long time to solve:
+	 1. displaying the subset that goes in to the sum without fully understanding the algorithm.
+	 2. file pointer manipulation, change in child process pointer does not carry back into parent.
+
+Version control through github, all the logs could be found under log.txt within the directory.
+
+There is a prepared input.dat file ready to use.
+make clean command will remove only the executable and the default output file.
