@@ -120,14 +120,14 @@ int main(int argc, char* argv[]){
                         case 'i':
 				iflag = 1;
 				inputFile = optarg;
-			 	printf("input file changed to: %s\n",optarg);
+			 	printf("Input file: %s\n",optarg);
                                 break;
 
 			// setting up output file on -o
 			case 'o':
 				oflag = 1;
 				outputFile = optarg;
-				printf("output file changed to: %s\n",outputFile);
+				printf("Putput file: %s\n",outputFile);
 				break;
 
 			// setting up the time on -t
@@ -145,8 +145,14 @@ int main(int argc, char* argv[]){
 	}
 
 	// formatting the output to the screen
-	if(tflag==0){
+	if(tflag!=1){
 	printf("Max time duration: %d seconds\n", t);
+	}
+	if(iflag!=1){
+	printf("Input file: %s\n",inputFile);
+	}
+	if(oflag!=1){
+	printf("Output file: %s\n",outputFile);
 	}
 	if(iflag!=1&&oflag!=1&&tflag!=1){
 	printf("=============================================================\n\n");
