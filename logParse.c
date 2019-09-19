@@ -246,7 +246,6 @@ int main(int argc, char* argv[]){
 				a+=1;
 			}
 			printf("\n");
-			sleep(1);
 			// open a writing file, if the subset is found, output to output file
 			wfp = fopen(outputFile,"a");
 			if(subset(temp,i,sum,oriTime)){
